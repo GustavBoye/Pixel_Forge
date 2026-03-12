@@ -47,6 +47,11 @@ let clipboard = null;  // {canvas, w, h, x, y} - copied pixel data
 let floatingSel = null;  // {canvas, x, y, w, h} - floating selection being moved
 let floatingIsPaste = false;  // true if floatingSel came from a paste (should go to new layer)
 
+// Text tool state
+let textBox = null;  // {x, y, w, h} - current text box being drawn
+let textBoxEditing = false;  // true if editing text in a box
+let textResizing = null;  // 'n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw' - resize direction
+
 const TIDS = ['sel', 'marquee', 'brush', 'erase', 'fill', 'rect', 'ellip', 'line', 'text', 'pick'];
 const TNAMES = {
   sel: 'Select', marquee: 'Marquee', brush: 'Brush', erase: 'Eraser', fill: 'Fill',
@@ -80,7 +85,7 @@ function mkLayer(name, type = 'pixel') {
     name, type, canvas: c, ctx: c.getContext('2d'),
     visible: true, locked: false, opacity: 1, blend: 'normal',
     text: 'Text', ff: 'Arial', fs: 60, fstyle: '', align: 'center', color: '#ffffff',
-    tx: CW / 2, ty: CH / 2,
+    tx: CW / 2, ty: CH / 2, tw: 200, th: 100,  // text box dimensions
     img: null, ix: 0, iy: 0, iw: 0, ih: 0,
     px: 0, py: 0  // pixel layer position
   };
@@ -132,6 +137,19 @@ function render() {
     dc.restore();
   }
 
+  // Draw text box being created
+  if (textBox && textBox.w > 0 && textBox.h > 0) {
+    dc.save();
+    dc.strokeStyle = '#5b8cff';
+    dc.lineWidth = 2;
+    dc.setLineDash([5, 5]);
+    dc.strokeRect(textBox.x, textBox.y, textBox.w, textBox.h);
+    dc.setLineDash([]);
+    dc.fillStyle = '#5b8cff11';
+    dc.fillRect(textBox.x, textBox.y, textBox.w, textBox.h);
+    dc.restore();
+  }
+
   // Draw selection rectangle
   if (selRect) {
     dc.save();
@@ -161,12 +179,44 @@ function render() {
 function drawTxtL(l) {
   const lc = l.ctx;
   lc.clearRect(0, 0, CW, CH);
+  
+  // Get text box dimensions
+  const boxW = l.tw || 200;
+  const boxH = l.th || 100;
+  const boxX = l.tx - boxW / 2;
+  const boxY = l.ty - boxH / 2;
+  
+  // Draw text box border and resize handles when editing
+  if (textBoxEditing && AI === layers.indexOf(l)) {
+    lc.strokeStyle = '#5b8cff';
+    lc.lineWidth = 1;
+    lc.setLineDash([5, 5]);
+    lc.strokeRect(boxX, boxY, boxW, boxH);
+    lc.setLineDash([]);
+    
+    // Draw resize handles
+    const hs = 8;
+    lc.fillStyle = '#5b8cff';
+    // Corners
+    lc.fillRect(boxX - hs/2, boxY - hs/2, hs, hs);
+    lc.fillRect(boxX + boxW - hs/2, boxY - hs/2, hs, hs);
+    lc.fillRect(boxX - hs/2, boxY + boxH - hs/2, hs, hs);
+    lc.fillRect(boxX + boxW - hs/2, boxY + boxH - hs/2, hs, hs);
+    // Edges
+    lc.fillRect(boxX + boxW/2 - hs/2, boxY - hs/2, hs, hs);
+    lc.fillRect(boxX + boxW/2 - hs/2, boxY + boxH - hs/2, hs, hs);
+    lc.fillRect(boxX - hs/2, boxY + boxH/2 - hs/2, hs, hs);
+    lc.fillRect(boxX + boxW - hs/2, boxY + boxH/2 - hs/2, hs, hs);
+  }
+  
+  // Draw the text with word wrapping
   lc.save();
   lc.font = `${l.fstyle ? l.fstyle + ' ' : ''}${l.fs}px "${l.ff}"`;
   lc.fillStyle = l.color;
-  lc.textAlign = l.align;
-  lc.textBaseline = 'middle';
-  const maxW = CW - 60;
+  lc.textAlign = l.align || 'left';
+  lc.textBaseline = 'top';
+  
+  const maxW = boxW - 10;
   const words = String(l.text).split(' ');
   let lines = [], line = '';
   for (const w of words) {
@@ -175,9 +225,16 @@ function drawTxtL(l) {
     else line = t2;
   }
   if (line) lines.push(line);
-  const lh = l.fs * 1.25;
-  let cy = l.ty - (lines.length - 1) * lh / 2;
-  for (const ln of lines) { lc.fillText(ln, l.tx, cy); cy += lh; }
+  
+  const lh = l.fs * 1.2;
+  let cy = boxY + 5;
+  for (const ln of lines) { 
+    let cx = boxX + 5;
+    if (l.align === 'center') cx = l.tx;
+    else if (l.align === 'right') cx = boxX + boxW - 5;
+    lc.fillText(ln, cx, cy); 
+    cy += lh; 
+  }
   lc.restore();
 }
 
@@ -338,6 +395,69 @@ disp.addEventListener('mousedown', e => {
     drawing = false;
     return;
   }
+
+  if (T === 'text') {
+    const l = layers[AI];
+    if (l && l.type === 'text' && AI === layers.indexOf(l)) {
+      // Check if clicking on resize handle
+      const boxW = l.tw || 200;
+      const boxH = l.th || 100;
+      const boxX = l.tx - boxW / 2;
+      const boxY = l.ty - boxH / 2;
+      const hs = 10; // handle size
+      
+      // Check corners and edges
+      const nearEdge = (val, edge) => Math.abs(val - edge) < hs;
+      
+      let resizeDir = null;
+      if (nearEdge(p.x, boxX) && nearEdge(p.y, boxY)) resizeDir = 'nw';
+      else if (nearEdge(p.x, boxX + boxW) && nearEdge(p.y, boxY)) resizeDir = 'ne';
+      else if (nearEdge(p.x, boxX) && nearEdge(p.y, boxY + boxH)) resizeDir = 'sw';
+      else if (nearEdge(p.x, boxX + boxW) && nearEdge(p.y, boxY + boxH)) resizeDir = 'se';
+      else if (nearEdge(p.x, boxX + boxW/2) && nearEdge(p.y, boxY)) resizeDir = 'n';
+      else if (nearEdge(p.x, boxX + boxW/2) && nearEdge(p.y, boxY + boxH)) resizeDir = 's';
+      else if (nearEdge(p.x, boxX) && nearEdge(p.y, boxY + boxH/2)) resizeDir = 'w';
+      else if (nearEdge(p.x, boxX + boxW) && nearEdge(p.y, boxY + boxH/2)) resizeDir = 'e';
+      
+      if (resizeDir) {
+        textBoxEditing = true;
+        textResizing = resizeDir;
+        dragSt = { x: p.x, y: p.y, tw: boxW, th: boxH, tx: l.tx, ty: l.ty };
+        drawing = true;
+        return;
+      }
+    }
+    
+    // If clicking on existing text layer box, start editing or moving
+    const clickedText = layers.find(txt => 
+      txt.type === 'text' && 
+      p.x >= txt.tx - txt.tw/2 && p.x <= txt.tx + txt.tw/2 &&
+      p.y >= txt.ty - txt.th/2 && p.y <= txt.ty + txt.th/2
+    );
+    
+    if (clickedText) {
+      const idx = layers.indexOf(clickedText);
+      if (idx !== AI) { AI = idx; render(); }
+      // Enable editing mode and start dragging
+      textBoxEditing = true;
+      dragSt = { x: e.clientX, y: e.clientY };
+      dragOr = { tx: clickedText.tx, ty: clickedText.ty };
+      drawing = true;
+      // Focus text input
+      setTimeout(() => G('txted').focus(), 50);
+      render();
+      return;
+    }
+    
+    // Clicking elsewhere - start creating a new text box
+    textBoxEditing = false;
+    textBox = { x: p.x, y: p.y, w: 0, h: 0 };
+    selStartX = p.x;
+    selStartY = p.y;
+    drawing = true;
+    return;
+  }
+
   if (T === 'fill') {
     if (l.type !== 'pixel') { toast('Select a pixel layer'); drawing = false; return; }
     floodFill(l, Math.round(p.x), Math.round(p.y));
@@ -372,6 +492,50 @@ disp.addEventListener('mousemove', e => {
       // Move pixel layer by updating position
       l.px = dragOr.px + dx;
       l.py = dragOr.py + dy;
+    }
+    render();
+    return;
+  }
+
+  // Text tool - create box, drag text, or resize
+  if (T === 'text') {
+    if (textBox) {
+      // Creating text box
+      textBox.x = Math.min(selStartX, p.x);
+      textBox.y = Math.min(selStartY, p.y);
+      textBox.w = Math.abs(p.x - selStartX);
+      textBox.h = Math.abs(p.y - selStartY);
+    } else if (textResizing) {
+      // Resizing text box
+      const l = layers[AI];
+      if (l && l.type === 'text') {
+        const dx = p.x - dragSt.x;
+        const dy = p.y - dragSt.y;
+        const origW = dragSt.tw;
+        const origH = dragSt.th;
+        const origX = dragSt.tx;
+        const origY = dragSt.ty;
+        
+        if (textResizing.includes('e')) l.tw = Math.max(50, origW + dx);
+        if (textResizing.includes('w')) {
+          l.tw = Math.max(50, origW - dx);
+          l.tx = origX + dx/2;
+        }
+        if (textResizing.includes('s')) l.th = Math.max(30, origH + dy);
+        if (textResizing.includes('n')) {
+          l.th = Math.max(30, origH - dy);
+          l.ty = origY + dy/2;
+        }
+      }
+    } else if (drawing && dragOr && dragOr.tx !== undefined) {
+      // Moving existing text layer
+      const dx = (e.clientX - dragSt.x) / Z;
+      const dy = (e.clientY - dragSt.y) / Z;
+      const l = layers[AI];
+      if (l && l.type === 'text') {
+        l.tx = dragOr.tx + dx;
+        l.ty = dragOr.ty + dy;
+      }
     }
     render();
     return;
@@ -423,6 +587,49 @@ disp.addEventListener('mouseup', e => {
   const p = cXY(e);
   const l = layers[AI];
   prevSnap = null;
+
+  // Finalize text box - create text layer
+  if (T === 'text' && textBox) {
+    textBox.x = Math.min(selStartX, p.x);
+    textBox.y = Math.min(selStartY, p.y);
+    textBox.w = Math.abs(p.x - selStartX);
+    textBox.h = Math.abs(p.y - selStartY);
+    
+    if (textBox.w > 10 && textBox.h > 10) {
+      // Create new text layer
+      const nl = mkLayer('Text', 'text');
+      nl.text = '';
+      nl.tx = textBox.x + textBox.w / 2;
+      nl.ty = textBox.y + textBox.h / 2;
+      nl.tw = textBox.w;
+      nl.th = textBox.h;
+      nl.ff = G('tff').value || 'Arial';
+      nl.fs = parseInt(G('tfsz').value) || 60;
+      nl.color = G('tcol').value || '#ffffff';
+      nl.align = 'left';
+      layers.unshift(nl);
+      AI = 0;
+      saveH();
+      textBoxEditing = true;
+      textBox = null;
+      // Focus text input for editing
+      setTimeout(() => G('txted').focus(), 50);
+      render();
+      return;
+    } else {
+      textBox = null;
+      render();
+      return;
+    }
+  }
+
+  // Stop dragging or resizing text layer
+  if (T === 'text' && (drawing && dragOr && dragOr.tx !== undefined) || textResizing) {
+    if (textResizing) {
+      textResizing = null;
+    }
+    saveH();
+  }
 
   // Finalize selection rectangle for marquee tool
   if (T === 'marquee' && selRect) {
@@ -516,7 +723,7 @@ document.addEventListener('keydown', e => {
   } else {
     const map = { v: 'sel', m: 'marquee', b: 'brush', e: 'erase', g: 'fill', r: 'rect', o: 'ellip', l: 'line', i: 'pick' };
     if (map[k]) setT(map[k]);
-    else if (k === 't') openTxtModal();
+    else if (k === 't') setT('text');
     else if (k === 'delete' || k === 'backspace') delLayer();
     else if (k === '[') { BS = Math.max(1, BS - 2); G('bsz').value = BS; }
     else if (k === ']') { BS = Math.min(300, BS + 2); G('bsz').value = BS; }
@@ -537,6 +744,7 @@ document.addEventListener('keydown', e => {
       }
       selRect = null; 
       selMoving = false;
+      textBoxEditing = false;
       render(); 
     }
   }
@@ -552,7 +760,8 @@ function saveH() {
     name: l.name, type: l.type, visible: l.visible, locked: l.locked,
     opacity: l.opacity, blend: l.blend, data: l.canvas.toDataURL(),
     text: l.text, ff: l.ff, fs: l.fs, fstyle: l.fstyle, align: l.align, color: l.color,
-    tx: l.tx, ty: l.ty, ix: l.ix, iy: l.iy, iw: l.iw, ih: l.ih,
+    tx: l.tx, ty: l.ty, tw: l.tw || 200, th: l.th || 100,
+    ix: l.ix, iy: l.iy, iw: l.iw, ih: l.ih,
     px: l.px || 0, py: l.py || 0,
     imgSrc: l.img ? l.img.src : null
   }));
@@ -569,7 +778,8 @@ function restoreSnap(snap) {
     Object.assign(l, {
       visible: s.visible, locked: s.locked, opacity: s.opacity, blend: s.blend,
       text: s.text, ff: s.ff, fs: s.fs, fstyle: s.fstyle, align: s.align, color: s.color,
-      tx: s.tx, ty: s.ty, ix: s.ix, iy: s.iy, iw: s.iw, ih: s.ih,
+      tx: s.tx, ty: s.ty, tw: s.tw || 200, th: s.th || 100,
+      ix: s.ix, iy: s.iy, iw: s.iw, ih: s.ih,
       px: s.px || 0, py: s.py || 0
     });
     if (s.imgSrc) { const img = new Image(); img.src = s.imgSrc; l.img = img; }
