@@ -399,25 +399,50 @@ disp.addEventListener('mousedown', e => {
   if (T === 'text') {
     const l = layers[AI];
     if (l && l.type === 'text' && AI === layers.indexOf(l)) {
-      // Check if clicking on resize handle
+      // Check if clicking on resize handle OR in middle for moving
       const boxW = l.tw || 200;
       const boxH = l.th || 100;
       const boxX = l.tx - boxW / 2;
       const boxY = l.ty - boxH / 2;
-      const hs = 10; // handle size
+      const hs = 8; // handle size - smaller = harder to trigger resize
       
-      // Check corners and edges
-      const nearEdge = (val, edge) => Math.abs(val - edge) < hs;
+      // Check if inside the box (for moving)
+      const inBox = p.x > boxX + hs && p.x < boxX + boxW - hs && 
+                   p.y > boxY + hs && p.y < boxY + boxH - hs;
+      
+      // If in middle, don't resize - move instead
+      if (inBox) {
+        // Start moving
+        textBoxEditing = true;
+        dragSt = { x: e.clientX, y: e.clientY };
+        dragOr = { tx: l.tx, ty: l.ty };
+        drawing = true;
+        setTimeout(() => G('txted').focus(), 50);
+        render();
+        return;
+      }
+      
+      // Helper to check if point is near an edge
+      const onEdge = (val, edge) => Math.abs(val - edge) < hs;
+      
+      // Check corners first (more specific)
+      const onLeft = onEdge(p.x, boxX);
+      const onRight = onEdge(p.x, boxX + boxW);
+      const onTop = onEdge(p.y, boxY);
+      const onBottom = onEdge(p.y, boxY + boxH);
       
       let resizeDir = null;
-      if (nearEdge(p.x, boxX) && nearEdge(p.y, boxY)) resizeDir = 'nw';
-      else if (nearEdge(p.x, boxX + boxW) && nearEdge(p.y, boxY)) resizeDir = 'ne';
-      else if (nearEdge(p.x, boxX) && nearEdge(p.y, boxY + boxH)) resizeDir = 'sw';
-      else if (nearEdge(p.x, boxX + boxW) && nearEdge(p.y, boxY + boxH)) resizeDir = 'se';
-      else if (nearEdge(p.x, boxX + boxW/2) && nearEdge(p.y, boxY)) resizeDir = 'n';
-      else if (nearEdge(p.x, boxX + boxW/2) && nearEdge(p.y, boxY + boxH)) resizeDir = 's';
-      else if (nearEdge(p.x, boxX) && nearEdge(p.y, boxY + boxH/2)) resizeDir = 'w';
-      else if (nearEdge(p.x, boxX + boxW) && nearEdge(p.y, boxY + boxH/2)) resizeDir = 'e';
+      
+      // Corners
+      if (onLeft && onTop) resizeDir = 'nw';
+      else if (onRight && onTop) resizeDir = 'ne';
+      else if (onLeft && onBottom) resizeDir = 'sw';
+      else if (onRight && onBottom) resizeDir = 'se';
+      // Edges
+      else if (onTop) resizeDir = 'n';
+      else if (onBottom) resizeDir = 's';
+      else if (onLeft) resizeDir = 'w';
+      else if (onRight) resizeDir = 'e';
       
       if (resizeDir) {
         textBoxEditing = true;
@@ -506,26 +531,68 @@ disp.addEventListener('mousemove', e => {
       textBox.w = Math.abs(p.x - selStartX);
       textBox.h = Math.abs(p.y - selStartY);
     } else if (textResizing) {
-      // Resizing text box
+      // Resizing text box - anchor opposite corner
       const l = layers[AI];
       if (l && l.type === 'text') {
-        const dx = p.x - dragSt.x;
-        const dy = p.y - dragSt.y;
         const origW = dragSt.tw;
         const origH = dragSt.th;
         const origX = dragSt.tx;
         const origY = dragSt.ty;
         
-        if (textResizing.includes('e')) l.tw = Math.max(50, origW + dx);
-        if (textResizing.includes('w')) {
-          l.tw = Math.max(50, origW - dx);
-          l.tx = origX + dx/2;
+        // Calculate edges
+        const left = origX - origW / 2;
+        const right = origX + origW / 2;
+        const top = origY - origH / 2;
+        const bottom = origY + origH / 2;
+        
+        let newW = origW, newH = origH, newX = origX, newY = origY;
+        
+        if (textResizing === 'se') {
+          // Bottom-right: anchor top-left
+          newW = Math.max(50, p.x - left);
+          newH = Math.max(30, p.y - top);
+          newX = left + newW / 2;
+          newY = top + newH / 2;
+        } else if (textResizing === 'sw') {
+          // Bottom-left: anchor top-right
+          newW = Math.max(50, right - p.x);
+          newH = Math.max(30, p.y - top);
+          newX = right - newW / 2;
+          newY = top + newH / 2;
+        } else if (textResizing === 'ne') {
+          // Top-right: anchor bottom-left
+          newW = Math.max(50, p.x - left);
+          newH = Math.max(30, bottom - p.y);
+          newX = left + newW / 2;
+          newY = bottom - newH / 2;
+        } else if (textResizing === 'nw') {
+          // Top-left: anchor bottom-right
+          newW = Math.max(50, right - p.x);
+          newH = Math.max(30, bottom - p.y);
+          newX = right - newW / 2;
+          newY = bottom - newH / 2;
+        } else if (textResizing === 'e') {
+          // Right edge: anchor left
+          newW = Math.max(50, p.x - left);
+          newX = left + newW / 2;
+        } else if (textResizing === 'w') {
+          // Left edge: anchor right
+          newW = Math.max(50, right - p.x);
+          newX = right - newW / 2;
+        } else if (textResizing === 's') {
+          // Bottom edge: anchor top
+          newH = Math.max(30, p.y - top);
+          newY = top + newH / 2;
+        } else if (textResizing === 'n') {
+          // Top edge: anchor bottom
+          newH = Math.max(30, bottom - p.y);
+          newY = bottom - newH / 2;
         }
-        if (textResizing.includes('s')) l.th = Math.max(30, origH + dy);
-        if (textResizing.includes('n')) {
-          l.th = Math.max(30, origH - dy);
-          l.ty = origY + dy/2;
-        }
+        
+        l.tw = newW;
+        l.th = newH;
+        l.tx = newX;
+        l.ty = newY;
       }
     } else if (drawing && dragOr && dragOr.tx !== undefined) {
       // Moving existing text layer
