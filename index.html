@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelForge</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="menubar">
+  <div id="logo">⬡ PixelForge</div>
+  <div class="mi">File<div class="dd">
+    <div class="di" onclick="newCanvas()">New Canvas <span class="sc">Ctrl+N</span></div>
+    <div class="di" onclick="G('fi').click()">Open Image</div>
+    <div class="ds"></div>
+    <div class="di" onclick="exportPNG()">Export PNG <span class="sc">Ctrl+E</span></div>
+    <div class="di" onclick="exportJPG()">Export JPEG</div>
+  </div></div>
+  <div class="mi">Edit<div class="dd">
+    <div class="di" onclick="undo()">Undo <span class="sc">Ctrl+Z</span></div>
+    <div class="di" onclick="redo()">Redo <span class="sc">Ctrl+Y</span></div>
+    <div class="ds"></div>
+    <div class="di" onclick="delLayer()">Delete Layer</div>
+    <div class="di" onclick="flattenAll()">Flatten Image</div>
+  </div></div>
+  <div class="mi">Layer<div class="dd">
+    <div class="di" onclick="addPixelLayer()">New Layer</div>
+    <div class="di" onclick="openTxtModal()">Add Text Layer</div>
+    <div class="di" onclick="G('ii').click()">Add Image Layer</div>
+    <div class="ds"></div>
+    <div class="di" onclick="dupLayer()">Duplicate</div>
+    <div class="di" onclick="mergeDown()">Merge Down</div>
+  </div></div>
+  <div class="mi">Adjust<div class="dd">
+    <div class="di" onclick="openMod('bmod')">Brightness/Contrast</div>
+    <div class="di" onclick="doGray()">Grayscale</div>
+    <div class="di" onclick="doInvert()">Invert</div>
+    <div class="di" onclick="doSepia()">Sepia</div>
+    <div class="ds"></div>
+    <div class="di" onclick="doFlipH()">Flip Horizontal</div>
+    <div class="di" onclick="doFlipV()">Flip Vertical</div>
+  </div></div>
+  <div class="mi">Filter<div class="dd">
+    <div class="di" onclick="doBlur()">Blur</div>
+    <div class="di" onclick="doSharpen()">Sharpen</div>
+    <div class="di" onclick="doVignette()">Vignette</div>
+  </div></div>
+  <div class="mi">View<div class="dd">
+    <div class="di" onclick="setZoom(1)">100%</div>
+    <div class="di" onclick="fitScreen()">Fit Screen</div>
+    <div class="di" onclick="setZoom(Z*1.5)">Zoom In</div>
+    <div class="di" onclick="setZoom(Z/1.5)">Zoom Out</div>
+  </div></div>
+  <input type="file" id="fi" accept="image/*" style="display:none" onchange="openFile(this)">
+  <input type="file" id="ii" accept="image/*" style="display:none" onchange="addImgLayer(this)">
+</div>
+
+<div id="toolbar">
+  <div class="tbb" onclick="setZoom(Z*1.25)">＋</div>
+  <div class="tbb" onclick="setZoom(Z/1.25)">－</div>
+  <div class="tbb" onclick="setZoom(1)">100%</div>
+  <div class="tbb" onclick="fitScreen()">Fit</div>
+  <div class="tbsep"></div>
+  <span style="color:var(--muted);font-size:11px;flex-shrink:0">Size</span>
+  <input class="tbnum" type="number" id="bsz" value="12" min="1" max="300" oninput="BS=+this.value">
+  <span style="color:var(--muted);font-size:11px;flex-shrink:0">Opacity</span>
+  <input class="tbnum" type="number" id="bop" value="100" min="1" max="100" oninput="BO=+this.value/100">
+  <input type="color" id="cpick" value="#e05252" style="width:30px;height:26px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--panel2)">
+  <div class="tbsep"></div>
+  <div id="ttbar" style="display:none;align-items:center;gap:5px">
+    <select class="tbsel" id="tff" onchange="syncTL()">
+      <option>Arial</option><option>Georgia</option><option>Times New Roman</option>
+      <option>Courier New</option><option>Verdana</option><option>Impact</option>
+      <option>Comic Sans MS</option><option>Trebuchet MS</option><option>Garamond</option>
+    </select>
+    <input class="tbnum" type="number" id="tfsz" value="60" min="6" max="600" style="width:56px" oninput="syncTL()">
+    <div class="tbb" id="tbold" onclick="tBold()"><b>B</b></div>
+    <div class="tbb" id="tital" onclick="tItal()"><i>I</i></div>
+    <input type="color" id="tcol" value="#ffffff" style="width:30px;height:26px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--panel2)" onchange="syncTL()">
+  </div>
+  <div style="flex:1"></div>
+  <div class="tbb" onclick="openTxtModal()">＋ Text</div>
+  <div class="tbb" onclick="G('ii').click()">＋ Image</div>
+  <div class="tbb" onclick="addPixelLayer()">＋ Layer</div>
+</div>
+
+<div id="main">
+  <div id="tools">
+    <div class="tool on" id="tsel" onclick="setT('sel')">⊹<div class="ttip">Select/Move (V)</div></div>
+    <div class="tool" id="tbrush" onclick="setT('brush')">✏<div class="ttip">Brush (B)</div></div>
+    <div class="tool" id="terase" onclick="setT('erase')">◻<div class="ttip">Eraser (E)</div></div>
+    <div class="tool" id="tfill" onclick="setT('fill')">◈<div class="ttip">Fill (G)</div></div>
+    <div class="tsep"></div>
+    <div class="tool" id="trect" onclick="setT('rect')">▭<div class="ttip">Rectangle (R)</div></div>
+    <div class="tool" id="tellip" onclick="setT('ellip')">◯<div class="ttip">Ellipse (O)</div></div>
+    <div class="tool" id="tline" onclick="setT('line')">╱<div class="ttip">Line (L)</div></div>
+    <div class="tsep"></div>
+    <div class="tool" id="ttext" onclick="setT('text');openTxtModal()">T<div class="ttip">Text (T)</div></div>
+    <div class="tsep"></div>
+    <div class="tool" id="tpick" onclick="setT('pick')">✦<div class="ttip">Eyedropper (I)</div></div>
+    <div style="flex:1"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding-bottom:8px">
+      <div id="fgsw" style="width:22px;height:22px;background:#e05252;border:1px solid #888;border-radius:3px;cursor:pointer;z-index:1;position:relative" onclick="G('cpick').click()"></div>
+      <div style="width:22px;height:22px;background:#1a1a1f;border:1px solid #888;border-radius:3px;margin-top:-8px;margin-left:8px"></div>
+    </div>
+  </div>
+
+  <div id="carea"
+    ondragover="event.preventDefault();this.style.outline='2px dashed var(--accent)'"
+    ondragleave="this.style.outline=''"
+    ondrop="dropFile(event)">
+    <div id="cwrap"><canvas id="disp"></canvas></div>
+    <div id="zlbl">100%</div>
+    <div id="xyc">0, 0</div>
+  </div>
+
+  <div id="rpanel">
+    <div class="ph">Properties</div>
+    <div class="pb">
+      <div class="pr">
+        <div class="pl">Blend</div>
+        <select class="pi" id="lblend" onchange="setBlend()">
+          <option>normal</option><option>multiply</option><option>screen</option><option>overlay</option>
+          <option>darken</option><option>lighten</option><option>color-dodge</option><option>color-burn</option>
+          <option>hard-light</option><option>soft-light</option><option>difference</option><option>exclusion</option>
+        </select>
+      </div>
+      <div class="pr">
+        <div class="pl">Opacity</div>
+        <input type="range" id="lopac" min="0" max="100" value="100" oninput="setOpac(this.value)">
+        <span id="lopv" style="font-size:11px;color:var(--muted);width:26px;text-align:right;flex-shrink:0">100</span>
+      </div>
+      <div id="txpnl" style="display:none;margin-top:6px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Text Content</div>
+        <textarea id="txted" class="mi2" rows="3" style="resize:vertical;font-size:12px;line-height:1.4;width:100%;padding:5px 7px" oninput="editTxt()"></textarea>
+      </div>
+    </div>
+
+    <div id="lsec">
+      <div class="ph">Layers <span id="lcnt" style="font-weight:400;font-size:11px;color:var(--muted)"></span></div>
+      <div id="llist"></div>
+      <div id="ltbar">
+        <div class="ltb" onclick="addPixelLayer()" title="New">＋</div>
+        <div class="ltb" onclick="dupLayer()" title="Dup">⎘</div>
+        <div class="ltb" onclick="layUp()" title="Up">↑</div>
+        <div class="ltb" onclick="layDn()" title="Down">↓</div>
+        <div class="ltb" onclick="delLayer()" title="Delete" style="color:var(--accent2)">✕</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sbar">
+  <span id="stool">Brush</span>
+  <span id="ssz">800×600</span>
+  <span id="slay">Layers: 1</span>
+  <span style="flex:1"></span>
+  <span>Drag & drop images • [ ] brush size</span>
+</div>
+
+<!-- MODALS -->
+<div class="mov" id="ncmod">
+  <div class="modal">
+    <h2>New Canvas</h2>
+    <div class="mr"><div class="ml">Width (px)</div><input class="mi2" type="number" id="ncw" value="800"></div>
+    <div class="mr"><div class="ml">Height (px)</div><input class="mi2" type="number" id="nch" value="600"></div>
+    <div class="mr"><div class="ml">Background</div>
+      <select class="mi2" id="ncbg"><option value="white">White</option><option value="black">Black</option><option value="transparent">Transparent</option></select>
+    </div>
+    <div class="mac">
+      <button class="mb sec" onclick="closeMod('ncmod')">Cancel</button>
+      <button class="mb pri" onclick="doNewCanvas()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="mov" id="txmod">
+  <div class="modal">
+    <h2>Add Text Layer</h2>
+    <div class="mr"><div class="ml">Text</div><input class="mi2" type="text" id="txtin" value="Hello World"></div>
+    <div class="mr"><div class="ml">Font</div>
+      <select class="mi2" id="mff"><option>Arial</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option><option>Verdana</option><option>Impact</option><option>Comic Sans MS</option><option>Trebuchet MS</option><option>Garamond</option></select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="mr" style="flex:1"><div class="ml">Size</div><input class="mi2" type="number" id="mfsz" value="60" min="6" max="600"></div>
+      <div class="mr" style="flex:1"><div class="ml">Color</div><input class="mi2" type="color" id="mtc" value="#ffffff" style="height:34px;padding:2px;cursor:pointer"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="mr" style="flex:1"><div class="ml">Style</div>
+        <select class="mi2" id="mstyle"><option value="">Normal</option><option value="bold">Bold</option><option value="italic">Italic</option><option value="bold italic">Bold Italic</option></select>
+      </div>
+      <div class="mr" style="flex:1"><div class="ml">Align</div>
+        <select class="mi2" id="malign"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+      </div>
+    </div>
+    <div class="mac">
+      <button class="mb sec" onclick="closeMod('txmod')">Cancel</button>
+      <button class="mb pri" onclick="doAddText()">Add Text</button>
+    </div>
+  </div>
+</div>
+
+<div class="mov" id="bmod">
+  <div class="modal">
+    <h2>Brightness / Contrast</h2>
+    <div class="mr"><div class="ml">Brightness: <span id="bv">0</span></div>
+      <input type="range" min="-150" max="150" value="0" id="bsl" oninput="G('bv').textContent=this.value"></div>
+    <div class="mr"><div class="ml">Contrast: <span id="cv">0</span></div>
+      <input type="range" min="-100" max="100" value="0" id="csl" oninput="G('cv').textContent=this.value"></div>
+    <div class="mac">
+      <button class="mb sec" onclick="closeMod('bmod')">Cancel</button>
+      <button class="mb pri" onclick="doBC()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div id="cmenu">
+  <div class="ci" onclick="dupLayer()">⎘ Duplicate</div>
+  <div class="ci" onclick="delLayer()">✕ Delete</div>
+  <div class="csep"></div>
+  <div class="ci" onclick="layUp()">↑ Up</div>
+  <div class="ci" onclick="layDn()">↓ Down</div>
+  <div class="csep"></div>
+  <div class="ci" onclick="mergeDown()">⊞ Merge Down</div>
+  <div class="ci" onclick="flattenAll()">⊟ Flatten</div>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
