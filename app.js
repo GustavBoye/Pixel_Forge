@@ -45,6 +45,7 @@ let selMoving = false;  // true if dragging the selection
 let selStartX = 0, selStartY = 0;  // start position when creating selection
 let clipboard = null;  // {canvas, w, h, x, y} - copied pixel data
 let floatingSel = null;  // {canvas, x, y, w, h} - floating selection being moved
+let floatingIsPaste = false;  // true if floatingSel came from a paste (should go to new layer)
 
 const TIDS = ['sel', 'marquee', 'brush', 'erase', 'fill', 'rect', 'ellip', 'line', 'text', 'pick'];
 const TNAMES = {
@@ -80,7 +81,8 @@ function mkLayer(name, type = 'pixel') {
     visible: true, locked: false, opacity: 1, blend: 'normal',
     text: 'Text', ff: 'Arial', fs: 60, fstyle: '', align: 'center', color: '#ffffff',
     tx: CW / 2, ty: CH / 2,
-    img: null, ix: 0, iy: 0, iw: 0, ih: 0
+    img: null, ix: 0, iy: 0, iw: 0, ih: 0,
+    px: 0, py: 0  // pixel layer position
   };
 }
 
@@ -104,7 +106,14 @@ function render() {
     dc.save();
     dc.globalAlpha = l.opacity;
     dc.globalCompositeOperation = l.blend;
-    dc.drawImage(l.canvas, 0, 0);
+    if (l.type === 'pixel') {
+      // Draw pixel layer at its position
+      dc.drawImage(l.canvas, l.px || 0, l.py || 0);
+    } else if (l.type === 'image') {
+      dc.drawImage(l.canvas, l.ix, l.iy);
+    } else {
+      dc.drawImage(l.canvas, 0, 0);
+    }
     dc.restore();
   }
 
@@ -270,7 +279,7 @@ disp.addEventListener('mousedown', e => {
 
   if (T === 'sel') {
     dragSt = { x: e.clientX, y: e.clientY };
-    dragOr = { tx: l.tx, ty: l.ty, ix: l.ix, iy: l.iy };
+    dragOr = { tx: l.tx, ty: l.ty, ix: l.ix, iy: l.iy, px: l.px || 0, py: l.py || 0 };
     return;
   }
 
@@ -280,7 +289,7 @@ disp.addEventListener('mousedown', e => {
                   p.y >= selRect.y && p.y <= selRect.y + selRect.h;
     
     if (inSel && floatingSel) {
-      // Clicking inside floating selection - start moving it
+      // Clicking inside floating selection (paste or move) - start moving it
       selMoving = true;
       dragSt = { x: p.x, y: p.y };
       dragOr = { x: floatingSel.x, y: floatingSel.y };
@@ -359,6 +368,11 @@ disp.addEventListener('mousemove', e => {
       l.ctx.clearRect(0, 0, CW, CH);
       l.ctx.drawImage(l.img, l.ix, l.iy, l.iw, l.ih);
     }
+    else if (l.type === 'pixel') {
+      // Move pixel layer by updating position
+      l.px = dragOr.px + dx;
+      l.py = dragOr.py + dy;
+    }
     render();
     return;
   }
@@ -413,11 +427,17 @@ disp.addEventListener('mouseup', e => {
   // Finalize selection rectangle for marquee tool
   if (T === 'marquee' && selRect) {
     if (selMoving && floatingSel) {
-      // Was moving floating selection - commit to canvas
-      l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
-      saveH();
-      floatingSel = null;
-      selMoving = false;
+      // Was moving floating selection - commit
+      if (floatingIsPaste) {
+        // Paste goes onto its own new layer
+        commitPasteAsLayer();
+      } else {
+        l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+        saveH();
+        floatingSel = null;
+        floatingIsPaste = false;
+        selMoving = false;
+      }
       render();
       return;
     }
@@ -438,15 +458,26 @@ disp.addEventListener('mouseup', e => {
 
   // Click elsewhere with floating selection commits it
   if (floatingSel && l && l.type === 'pixel') {
-    l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
-    saveH();
-    floatingSel = null;
-    selRect = null;
-    selMoving = false;
+    if (floatingIsPaste) {
+      commitPasteAsLayer();
+    } else {
+      l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+      saveH();
+      floatingSel = null;
+      floatingIsPaste = false;
+      selRect = null;
+      selMoving = false;
+    }
     render();
   }
 
   if (!l || l.locked) return;
+
+  // Save history after moving with select tool
+  if (T === 'sel' && dragSt) {
+    saveH();
+  }
+
   if (T === 'rect' || T === 'ellip' || T === 'line') {
     if (l.type !== 'pixel') { toast('Select a pixel layer'); render(); return; }
     drawShape(l.ctx, sx, sy, p.x, p.y);
@@ -492,12 +523,17 @@ document.addEventListener('keydown', e => {
     else if (k === 'escape') { 
       // Commit floating selection if exists
       if (floatingSel) {
-        const l = layers[AI];
-        if (l && l.type === 'pixel') {
-          l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
-          saveH();
+        if (floatingIsPaste) {
+          commitPasteAsLayer();
+        } else {
+          const l = layers[AI];
+          if (l && l.type === 'pixel') {
+            l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+            saveH();
+          }
+          floatingSel = null;
+          floatingIsPaste = false;
         }
-        floatingSel = null;
       }
       selRect = null; 
       selMoving = false;
@@ -517,6 +553,7 @@ function saveH() {
     opacity: l.opacity, blend: l.blend, data: l.canvas.toDataURL(),
     text: l.text, ff: l.ff, fs: l.fs, fstyle: l.fstyle, align: l.align, color: l.color,
     tx: l.tx, ty: l.ty, ix: l.ix, iy: l.iy, iw: l.iw, ih: l.ih,
+    px: l.px || 0, py: l.py || 0,
     imgSrc: l.img ? l.img.src : null
   }));
   H.push({ layers: snap, AI });
@@ -532,7 +569,8 @@ function restoreSnap(snap) {
     Object.assign(l, {
       visible: s.visible, locked: s.locked, opacity: s.opacity, blend: s.blend,
       text: s.text, ff: s.ff, fs: s.fs, fstyle: s.fstyle, align: s.align, color: s.color,
-      tx: s.tx, ty: s.ty, ix: s.ix, iy: s.iy, iw: s.iw, ih: s.ih
+      tx: s.tx, ty: s.ty, ix: s.ix, iy: s.iy, iw: s.iw, ih: s.ih,
+      px: s.px || 0, py: s.py || 0
     });
     if (s.imgSrc) { const img = new Image(); img.src = s.imgSrc; l.img = img; }
     const img = new Image();
@@ -699,6 +737,21 @@ function setBlend() {
 // ═══════════════════════════════════════════════════════════════
 // CLIPBOARD (COPY/CUT/PASTE)
 // ═══════════════════════════════════════════════════════════════
+function commitPasteAsLayer() {
+  if (!floatingSel) return;
+  // Create a full-canvas-size layer and stamp the paste at its current position
+  const nl = mkLayer('Pasted Layer', 'pixel');
+  nl.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+  layers.unshift(nl);
+  AI = 0;
+  floatingSel = null;
+  floatingIsPaste = false;
+  selRect = null;
+  selMoving = false;
+  saveH();
+  render();
+  toast('Pasted as new layer!');
+}
 function copySelection() {
   const l = layers[AI];
   if (!l || l.type !== 'pixel') { toast('Select a pixel layer'); return; }
@@ -765,29 +818,31 @@ function cutSelection() {
 }
 
 function pasteSelection() {
-  const l = layers[AI];
-  if (!l || l.type !== 'pixel') { toast('Select a pixel layer'); return; }
   if (!clipboard) { toast('Nothing to paste'); return; }
 
   const cx = Math.round(CW / 2 - clipboard.w / 2);
   const cy = Math.round(CH / 2 - clipboard.h / 2);
 
-  // Create floating selection (don't commit to canvas yet)
-  floatingSel = { 
-    canvas: clipboard.canvas, 
-    x: cx, 
-    y: cy, 
-    w: clipboard.w, 
-    h: clipboard.h 
-  };
+  // Clone the clipboard canvas so we don't mutate it
+  const tmp = document.createElement('canvas');
+  tmp.width = clipboard.w;
+  tmp.height = clipboard.h;
+  tmp.getContext('2d').drawImage(clipboard.canvas, 0, 0);
+
+  // Create floating selection (will become its own layer on commit)
+  floatingSel = { canvas: tmp, x: cx, y: cy, w: clipboard.w, h: clipboard.h };
+  floatingIsPaste = true;
 
   selRect = { x: cx, y: cy, w: clipboard.w, h: clipboard.h };
-  selMoving = true;
-  dragSt = { x: cx + clipboard.w/2, y: cy + clipboard.h/2 };
-  dragOr = { x: cx, y: cy };
+  selMoving = false;
+  dragSt = null;
+  dragOr = null;
+
+  // Switch to marquee tool so the user can immediately drag the paste
+  setT('marquee');
 
   render();
-  toast('Pasted! Drag to move, click to commit');
+  toast('Pasted on new layer! Drag to position, then click outside to commit');
 }
 
 
