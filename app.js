@@ -39,13 +39,20 @@ let dragSt = null, dragOr = null;
 let prevSnap = null;
 let H = [], HI = -1;
 
-const TIDS = ['sel', 'brush', 'erase', 'fill', 'rect', 'ellip', 'line', 'text', 'pick'];
+// Selection & Clipboard
+let selRect = null;  // {x, y, w, h} - current selection
+let selMoving = false;  // true if dragging the selection
+let selStartX = 0, selStartY = 0;  // start position when creating selection
+let clipboard = null;  // {canvas, w, h, x, y} - copied pixel data
+let floatingSel = null;  // {canvas, x, y, w, h} - floating selection being moved
+
+const TIDS = ['sel', 'marquee', 'brush', 'erase', 'fill', 'rect', 'ellip', 'line', 'text', 'pick'];
 const TNAMES = {
-  sel: 'Select', brush: 'Brush', erase: 'Eraser', fill: 'Fill',
+  sel: 'Select', marquee: 'Marquee', brush: 'Brush', erase: 'Eraser', fill: 'Fill',
   rect: 'Rectangle', ellip: 'Ellipse', line: 'Line', text: 'Text', pick: 'Eyedropper'
 };
 const TCURS = {
-  sel: 'move', brush: 'crosshair', erase: 'cell', fill: 'crosshair',
+  sel: 'move', marquee: 'crosshair', brush: 'crosshair', erase: 'cell', fill: 'crosshair',
   rect: 'crosshair', ellip: 'crosshair', line: 'crosshair', text: 'text', pick: 'crosshair'
 };
 
@@ -107,6 +114,38 @@ function render() {
     dc.drawImage(prevSnap, 0, 0);
     dc.restore();
   }
+
+  // Draw floating selection (when moving pasted content)
+  if (floatingSel) {
+    dc.save();
+    dc.globalAlpha = 0.85;
+    dc.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+    dc.restore();
+  }
+
+  // Draw selection rectangle
+  if (selRect) {
+    dc.save();
+    // Solid line when moving, dashed when static
+    dc.strokeStyle = selMoving ? '#ff6b6b' : '#5b8cff';
+    dc.lineWidth = selMoving ? 2 : 2;
+    dc.setLineDash(selMoving ? [] : [5, 5]);
+    dc.strokeRect(selRect.x, selRect.y, selRect.w, selRect.h);
+    dc.setLineDash([]);
+    dc.fillStyle = selMoving ? '#ff6b6b22' : '#5b8cff22';
+    dc.fillRect(selRect.x, selRect.y, selRect.w, selRect.h);
+    // Draw corner handles when not moving
+    if (!selMoving && (selRect.w > 10 && selRect.h > 10)) {
+      const hs = 6;
+      dc.fillStyle = '#fff';
+      dc.fillRect(selRect.x - hs/2, selRect.y - hs/2, hs, hs);
+      dc.fillRect(selRect.x + selRect.w - hs/2, selRect.y - hs/2, hs, hs);
+      dc.fillRect(selRect.x - hs/2, selRect.y + selRect.h - hs/2, hs, hs);
+      dc.fillRect(selRect.x + selRect.w - hs/2, selRect.y + selRect.h - hs/2, hs, hs);
+    }
+    dc.restore();
+  }
+
   refreshPanel();
 }
 
@@ -234,6 +273,51 @@ disp.addEventListener('mousedown', e => {
     dragOr = { tx: l.tx, ty: l.ty, ix: l.ix, iy: l.iy };
     return;
   }
+
+  if (T === 'marquee') {
+    const hasSel = selRect && selRect.w > 2 && selRect.h > 2;
+    const inSel = hasSel && p.x >= selRect.x && p.x <= selRect.x + selRect.w && 
+                  p.y >= selRect.y && p.y <= selRect.y + selRect.h;
+    
+    if (inSel && floatingSel) {
+      // Clicking inside floating selection - start moving it
+      selMoving = true;
+      dragSt = { x: p.x, y: p.y };
+      dragOr = { x: floatingSel.x, y: floatingSel.y };
+    } else if (inSel && !floatingSel) {
+      // Clicking inside static selection - create floating from canvas and move
+      selMoving = true;
+      dragSt = { x: p.x, y: p.y };
+      dragOr = { x: selRect.x, y: selRect.y };
+      // Create floating selection from canvas
+      const x = Math.round(selRect.x);
+      const y = Math.round(selRect.y);
+      const w = Math.round(selRect.w);
+      const h = Math.round(selRect.h);
+      const tmp = document.createElement('canvas');
+      tmp.width = w;
+      tmp.height = h;
+      tmp.getContext('2d').drawImage(l.canvas, x, y, w, h, 0, 0, w, h);
+      floatingSel = { canvas: tmp, x: x, y: y, w: w, h: h };
+      // Clear the area on canvas
+      l.ctx.save();
+      l.ctx.globalCompositeOperation = 'destination-out';
+      l.ctx.fillRect(x, y, w, h);
+      l.ctx.restore();
+    } else {
+      // Click outside - create new selection
+      selRect = { x: p.x, y: p.y, w: 0, h: 0 };
+      selStartX = p.x;
+      selStartY = p.y;
+      sx = p.x;
+      sy = p.y;
+      selMoving = false;
+      floatingSel = null;
+    }
+    drawing = true;
+    return;
+  }
+
   if (T === 'pick') {
     const px = dc.getImageData(Math.round(p.x), Math.round(p.y), 1, 1).data;
     if (px[3] > 0) {
@@ -278,6 +362,32 @@ disp.addEventListener('mousemove', e => {
     render();
     return;
   }
+
+  if (T === 'marquee' && drawing) {
+    if (selMoving) {
+      // Moving the floating selection
+      const dx = p.x - dragSt.x;
+      const dy = p.y - dragSt.y;
+      if (floatingSel) {
+        floatingSel.x = dragOr.x + dx;
+        floatingSel.y = dragOr.y + dy;
+        selRect.x = floatingSel.x;
+        selRect.y = floatingSel.y;
+      } else {
+        selRect.x = dragOr.x + dx;
+        selRect.y = dragOr.y + dy;
+      }
+    } else {
+      // Creating new selection
+      selRect.x = Math.min(selStartX, p.x);
+      selRect.y = Math.min(selStartY, p.y);
+      selRect.w = Math.abs(p.x - selStartX);
+      selRect.h = Math.abs(p.y - selStartY);
+    }
+    render();
+    return;
+  }
+
   if (l.locked || !l.visible) return;
   if (T === 'brush' || T === 'erase') {
     drawLn(l, lx, ly, p.x, p.y);
@@ -294,11 +404,48 @@ disp.addEventListener('mousemove', e => {
 });
 
 disp.addEventListener('mouseup', e => {
-  if (!drawing) return;
+  const wasDrawing = drawing;
   drawing = false;
   const p = cXY(e);
   const l = layers[AI];
   prevSnap = null;
+
+  // Finalize selection rectangle for marquee tool
+  if (T === 'marquee' && selRect) {
+    if (selMoving && floatingSel) {
+      // Was moving floating selection - commit to canvas
+      l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+      saveH();
+      floatingSel = null;
+      selMoving = false;
+      render();
+      return;
+    }
+    // Creating new selection
+    selRect.x = Math.min(selStartX, p.x);
+    selRect.y = Math.min(selStartY, p.y);
+    selRect.w = Math.abs(p.x - selStartX);
+    selRect.h = Math.abs(p.y - selStartY);
+    if (selRect.w > 2 || selRect.h > 2) {
+      render();
+      return;
+    } else {
+      selRect = null;
+      render();
+      return;
+    }
+  }
+
+  // Click elsewhere with floating selection commits it
+  if (floatingSel && l && l.type === 'pixel') {
+    l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+    saveH();
+    floatingSel = null;
+    selRect = null;
+    selMoving = false;
+    render();
+  }
+
   if (!l || l.locked) return;
   if (T === 'rect' || T === 'ellip' || T === 'line') {
     if (l.type !== 'pixel') { toast('Select a pixel layer'); render(); return; }
@@ -326,18 +473,36 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey) {
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
     else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
-    else if (k === 'e') { e.preventDefault(); exportPNG(); }
+    else if (k === 'c') { e.preventDefault(); copySelection(); }
+    else if (k === 'x') { e.preventDefault(); cutSelection(); }
+    else if (k === 'v') { e.preventDefault(); pasteSelection(); }
+    else if (k === 'e' && !e.shiftKey) { e.preventDefault(); exportPNG(); }
+    else if (k === 'e' && e.shiftKey) { e.preventDefault(); flattenAll(); }
     else if (k === 'n') { e.preventDefault(); newCanvas(); }
     else if (k === '=' || k === '+') { e.preventDefault(); setZoom(Z * 1.25); }
     else if (k === '-') { e.preventDefault(); setZoom(Z / 1.25); }
     else if (k === '0') { e.preventDefault(); fitScreen(); }
   } else {
-    const map = { v: 'sel', b: 'brush', e: 'erase', g: 'fill', r: 'rect', o: 'ellip', l: 'line', i: 'pick' };
+    const map = { v: 'sel', m: 'marquee', b: 'brush', e: 'erase', g: 'fill', r: 'rect', o: 'ellip', l: 'line', i: 'pick' };
     if (map[k]) setT(map[k]);
     else if (k === 't') openTxtModal();
     else if (k === 'delete' || k === 'backspace') delLayer();
     else if (k === '[') { BS = Math.max(1, BS - 2); G('bsz').value = BS; }
     else if (k === ']') { BS = Math.min(300, BS + 2); G('bsz').value = BS; }
+    else if (k === 'escape') { 
+      // Commit floating selection if exists
+      if (floatingSel) {
+        const l = layers[AI];
+        if (l && l.type === 'pixel') {
+          l.ctx.drawImage(floatingSel.canvas, floatingSel.x, floatingSel.y);
+          saveH();
+        }
+        floatingSel = null;
+      }
+      selRect = null; 
+      selMoving = false;
+      render(); 
+    }
   }
 });
 
@@ -528,6 +693,101 @@ function setOpac(v) {
 function setBlend() {
   const l = layers[AI];
   if (l) { l.blend = G('lblend').value; render(); }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// CLIPBOARD (COPY/CUT/PASTE)
+// ═══════════════════════════════════════════════════════════════
+function copySelection() {
+  const l = layers[AI];
+  if (!l || l.type !== 'pixel') { toast('Select a pixel layer'); return; }
+  if (!selRect || selRect.w < 2 || selRect.h < 2) { toast('Make a selection first (Marquee tool)'); return; }
+
+  const x = Math.round(selRect.x);
+  const y = Math.round(selRect.y);
+  const w = Math.round(selRect.w);
+  const h = Math.round(selRect.h);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = w;
+  tmp.height = h;
+  const tc = tmp.getContext('2d');
+
+  // Copy from floating selection if exists, otherwise from canvas
+  if (floatingSel) {
+    // Calculate offset from floating selection
+    const fx = Math.max(0, x - floatingSel.x);
+    const fy = Math.max(0, y - floatingSel.y);
+    const fw = Math.min(w, floatingSel.w - fx);
+    const fh = Math.min(h, floatingSel.h - fy);
+    if (fw > 0 && fh > 0) {
+      tc.drawImage(floatingSel.canvas, fx, fy, fw, fh, 0, 0, fw, fh);
+    }
+  } else {
+    tc.drawImage(l.canvas, x, y, w, h, 0, 0, w, h);
+  }
+
+  clipboard = { canvas: tmp, w, h, x, y };
+  toast('Copied!');
+}
+
+function cutSelection() {
+  const l = layers[AI];
+  if (!l || l.type !== 'pixel') { toast('Select a pixel layer'); return; }
+  if (!selRect || selRect.w < 2 || selRect.h < 2) { toast('Make a selection first'); return; }
+
+  copySelection();
+
+  // Clear the area - either floating selection or canvas
+  const x = Math.round(selRect.x);
+  const y = Math.round(selRect.y);
+  const w = Math.round(selRect.w);
+  const h = Math.round(selRect.h);
+
+  if (floatingSel) {
+    // Clear from floating selection
+    const fc = floatingSel.canvas.getContext('2d');
+    fc.save();
+    fc.globalCompositeOperation = 'destination-out';
+    fc.fillRect(x - floatingSel.x, y - floatingSel.y, w, h);
+    fc.restore();
+  }
+
+  l.ctx.save();
+  l.ctx.globalCompositeOperation = 'destination-out';
+  l.ctx.fillRect(x, y, w, h);
+  l.ctx.restore();
+
+  saveH();
+  render();
+  toast('Cut!');
+}
+
+function pasteSelection() {
+  const l = layers[AI];
+  if (!l || l.type !== 'pixel') { toast('Select a pixel layer'); return; }
+  if (!clipboard) { toast('Nothing to paste'); return; }
+
+  const cx = Math.round(CW / 2 - clipboard.w / 2);
+  const cy = Math.round(CH / 2 - clipboard.h / 2);
+
+  // Create floating selection (don't commit to canvas yet)
+  floatingSel = { 
+    canvas: clipboard.canvas, 
+    x: cx, 
+    y: cy, 
+    w: clipboard.w, 
+    h: clipboard.h 
+  };
+
+  selRect = { x: cx, y: cy, w: clipboard.w, h: clipboard.h };
+  selMoving = true;
+  dragSt = { x: cx + clipboard.w/2, y: cy + clipboard.h/2 };
+  dragOr = { x: cx, y: cy };
+
+  render();
+  toast('Pasted! Drag to move, click to commit');
 }
 
 

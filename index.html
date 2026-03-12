@@ -22,8 +22,12 @@
     <div class="di" onclick="undo()">Undo <span class="sc">Ctrl+Z</span></div>
     <div class="di" onclick="redo()">Redo <span class="sc">Ctrl+Y</span></div>
     <div class="ds"></div>
+    <div class="di" onclick="copySelection()">Copy <span class="sc">Ctrl+C</span></div>
+    <div class="di" onclick="cutSelection()">Cut <span class="sc">Ctrl+X</span></div>
+    <div class="di" onclick="pasteSelection()">Paste <span class="sc">Ctrl+V</span></div>
+    <div class="ds"></div>
     <div class="di" onclick="delLayer()">Delete Layer</div>
-    <div class="di" onclick="flattenAll()">Flatten Image</div>
+    <div class="di" onclick="flattenAll()">Flatten Image <span class="sc">Ctrl+Shift+E</span></div>
   </div></div>
   <div class="mi">Layer<div class="dd">
     <div class="di" onclick="addPixelLayer()">New Layer</div>
@@ -89,6 +93,7 @@
 <div id="main">
   <div id="tools">
     <div class="tool on" id="tsel" onclick="setT('sel')">⊹<div class="ttip">Select/Move (V)</div></div>
+    <div class="tool" id="tmarquee" onclick="setT('marquee')">▢<div class="ttip">Marquee (M)</div></div>
     <div class="tool" id="tbrush" onclick="setT('brush')">✏<div class="ttip">Brush (B)</div></div>
     <div class="tool" id="terase" onclick="setT('erase')">◻<div class="ttip">Eraser (E)</div></div>
     <div class="tool" id="tfill" onclick="setT('fill')">◈<div class="ttip">Fill (G)</div></div>
