@@ -814,6 +814,15 @@ document.addEventListener('keydown', e => {
       textBoxEditing = false;
       render(); 
     }
+    else if (k === 'tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        AI = AI > 0 ? AI - 1 : layers.length - 1;
+      } else {
+        AI = AI < layers.length - 1 ? AI + 1 : 0;
+      }
+      render();
+    }
   }
 });
 
@@ -1207,6 +1216,7 @@ function refreshPanel() {
       G('txted').value = l.text;
       G('tff').value = l.ff;
       G('tfsz').value = l.fs;
+      G('tfszSlider').value = Math.min(200, l.fs);
       G('tcol').value = l.color;
     }
   }

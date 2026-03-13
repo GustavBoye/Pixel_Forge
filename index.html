@@ -80,6 +80,7 @@
       <option>Comic Sans MS</option><option>Trebuchet MS</option><option>Garamond</option>
     </select>
     <input class="tbnum" type="number" id="tfsz" value="60" min="6" max="600" style="width:56px" oninput="syncTL()">
+    <input type="range" id="tfszSlider" min="6" max="200" value="60" style="width:80px" oninput="G('tfsz').value=this.value;syncTL()">
     <div class="tbb" id="tbold" onclick="tBold()"><b>B</b></div>
     <div class="tbb" id="tital" onclick="tItal()"><i>I</i></div>
     <input type="color" id="tcol" value="#ffffff" style="width:30px;height:26px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--panel2)" oninput="syncTL()">
