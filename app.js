@@ -781,6 +781,7 @@ document.addEventListener('keydown', e => {
     else if (k === 'c') { e.preventDefault(); copySelection(); }
     else if (k === 'x') { e.preventDefault(); cutSelection(); }
     else if (k === 'v') { e.preventDefault(); pasteSelection(); }
+    else if (k === 'd') { e.preventDefault(); dupLayer(); }
     else if (k === 'e' && !e.shiftKey) { e.preventDefault(); exportPNG(); }
     else if (k === 'e' && e.shiftKey) { e.preventDefault(); flattenAll(); }
     else if (k === 'n') { e.preventDefault(); newCanvas(); }
