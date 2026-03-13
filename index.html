@@ -84,6 +84,10 @@
     <div class="tbb" id="tbold" onclick="tBold()"><b>B</b></div>
     <div class="tbb" id="tital" onclick="tItal()"><i>I</i></div>
     <input type="color" id="tcol" value="#ffffff" style="width:30px;height:26px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--panel2)" oninput="syncTL()">
+    <div class="tbb" onclick="setTAlign('left')">◀</div>
+    <div class="tbb" onclick="setTAlign('center')">◆</div>
+    <div class="tbb" onclick="setTAlign('right')">▶</div>
+    <div class="tbb" onclick="centerText()">◎</div>
   </div>
   <div style="flex:1"></div>
   <div class="tbb" onclick="openTxtModal()">＋ Text</div>

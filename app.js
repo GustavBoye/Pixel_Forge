@@ -1163,6 +1163,16 @@ function tItal() {
   syncTL();
 }
 
+function setTAlign(a) {
+  const l = layers[AI];
+  if (l && l.type === 'text') { l.align = a; render(); }
+}
+
+function centerText() {
+  const l = layers[AI];
+  if (l && l.type === 'text') { l.tx = CW / 2; l.ty = CH / 2; render(); }
+}
+
 
 // ═══════════════════════════════════════════════════════════════
 // PANEL UI
@@ -1219,6 +1229,12 @@ function refreshPanel() {
       G('tfsz').value = l.fs;
       G('tfszSlider').value = Math.min(200, l.fs);
       G('tcol').value = l.color;
+      // Update alignment button states
+      document.querySelectorAll('#ttbar .tbb').forEach(b => {
+        if (b.textContent === '◀') b.classList.toggle('on', l.align === 'left');
+        if (b.textContent === '◆') b.classList.toggle('on', l.align === 'center');
+        if (b.textContent === '▶') b.classList.toggle('on', l.align === 'right');
+      });
     }
   }
 }
