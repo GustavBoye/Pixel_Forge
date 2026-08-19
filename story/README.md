@@ -14,6 +14,7 @@ World bible, story template, and drafts.
 ```
 story/
 ├── README.md            you are here — conventions and status
+├── METHOD.md            how to find a story: image → moral → choice → price → acts
 ├── TEMPLATE.md          the five-act structure explained, act by act
 ├── SPARKS.md            premise bank — pick one and go
 ├── new-story.sh         ./new-story.sh "Title"  → a blank story from the template

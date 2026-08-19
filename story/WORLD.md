@@ -55,6 +55,9 @@ They tax, rob and hang; the Norinheimers who watch do nothing.
 shake a valley. Hunched, unnaturally fast in the mist. Able to climb the mountain and slip
 past a thinly patrolled fortress.
 
+**Huldugaard** — the Huldu homeland or stronghold. Named but not yet described; what
+happened there, and whether the refugees at Wolfspine came from it, is open.
+
 **The Huldus** — pale, night-going people sheltering at Wolfspine. Ancient trade partners
 of the gnomes. Avoided a plague that took "the rest." *(unclear — which plague, and how.)*
 
