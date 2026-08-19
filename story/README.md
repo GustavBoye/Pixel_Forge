@@ -14,8 +14,13 @@ World bible, story template, and drafts.
 ```
 story/
 ├── README.md            you are here — conventions and status
-├── TEMPLATE.md          five-act template with line budgets for short stories
-├── stories/             small self-contained stories written to the template
+├── TEMPLATE.md          the five-act structure explained, act by act
+├── SPARKS.md            premise bank — pick one and go
+├── new-story.sh         ./new-story.sh "Title"  → a blank story from the template
+├── check-story.sh       ./check-story.sh        → act lengths vs. budgets
+├── stories/
+│   ├── _TEMPLATE.md     the blank form (copied by new-story.sh)
+│   └── *.md             one file per short story
 ├── OUTLINE.md           the working outline — spine, movements, scene list, threads
 ├── CHARACTERS.md        who exists, what's established, what's only planned
 ├── WORLD.md             places, peoples, things, and locked spellings
@@ -57,6 +62,19 @@ with a Bloodguard child and can have no more, and Ulfir has to choose.
   `[OUTLINE — not yet drafted]` so it never gets mistaken for finished prose.
 - **Chapters 8–13 are headed "Chapter X" in the draft** and are numbered here by position.
 - **New chapters** go in `manuscript/act-<n>/` named `<NN>-<kebab-title>.md`.
+
+## Writing a short story
+
+```sh
+./new-story.sh "The Sealing"      # creates stories/the-sealing.md
+./check-story.sh                  # act lengths against the budgets
+```
+
+Fill the six SPARK lines at the top of the file first — pressure, misfit, lure, choice,
+payoff, bill. If you can't answer them in one line each, the story isn't ready yet and
+prose won't fix it. `SPARKS.md` has premises with the choice already worked out.
+Then write the acts to budget; the guidance in each act is an HTML comment, so delete it
+as you go. `TEMPLATE.md` explains what each act has to do.
 
 ## Working with it
 
