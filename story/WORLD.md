@@ -105,3 +105,49 @@ runes above the gate are in a language long forgotten.
 | Bloodguard (capitalised) | bloodguard |
 | Vibkriseer | vibkriseer |
 | *(pending)* the mentor gnome's name | Fignal / Figdal / Gimdal / Gimbal |
+
+---
+
+# Nisaland and the gnome founding
+
+From *The Light* (`stories/nisaland-the-light.md`).
+
+**Nisaland** — the gnomes' old home: tunnels carved into sea cliffs, high above a wild,
+untamed ocean. Each winter colder than the last, howling winds off the water. A place of
+constant survival, which the gnomes endure rather than question.
+
+**Berrick (Brimble)** — the young gnome who could not accept the cycle of cold. Watched a
+steady light on the horizon that the elders dismissed as ice tricks, crossed the sea the
+winter it froze, and found the light was only sunlight on a polished mountain wall.
+Rescued by humans, he found warm caves in that mountain, went home, and told his people an
+angel had led him to a promised land. They followed him and crowned him king.
+
+**King Uther of Norinheim** — the human king who received Berrick, valued gnomish
+craftsmanship, and set him a hard problem of mathematics or natural science. On solving
+it, Berrick was given money and food enough to move an entire people. The alliance between
+gnomes and Norinheim begins here.
+
+## What this establishes for the rest of the world
+
+- **The gnomes are not native to their mountain.** They are immigrants, one generation of
+  hardship away from cliff tunnels, and their hold exists by a human king's grant.
+- **The founding is built on a lie** — an angel and a promised land, where the truth was a
+  reflection and a stranger's charity. Whether the gnomes still believe the angel version
+  is a live question.
+- **Gnomish craftsmanship, mathematics and record-keeping** are what humans have always
+  valued them for, and what bought them the mountain in the first place. This is the same
+  culture that keeps 5,000 years of documents in the deep.
+- **The alliance with Norinheim lapses**, and the old Nisaland political elite take the
+  leadership back by force.
+
+## Link to the Wolfspine draft
+
+The mountain hold Ulfir carries the dead gnome to — east along the mountainside, through
+the split rock, the small door, the stairs cut down into the light — is plausibly Berrick's
+mountain, generations on. Two details already line up: its doors are built human-sized
+*for trading with Huldus*, which suits a people whose home was won by dealing with
+outsiders; and its deep archive matches the record-keeping culture Uther paid for.
+
+If so, then by Ulfir's day the founding alliance is long dead, the coup has happened, and
+the humans who once granted the mountain are the Redcloaks who now kill gnomes in the
+forest — which is why Ulfir is put in a cell before he is thanked.

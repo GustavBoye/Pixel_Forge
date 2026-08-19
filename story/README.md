@@ -1,13 +1,21 @@
-# Wolfspine — story repo
+# Story repo
 
-Working repository for the Wolfspine novel: Ulfir of Hrafvik, the fortress at the
-empire's northern edge, and what comes over the wall.
+World bible, story template, and drafts.
+
+- **The world** — Norinheim and its edges: the gnomes, the Huldus, the Grukks, the
+  Bloodguard, and the mountains between them.
+- **Small stories** — self-contained pieces written to the five-act template in
+  `TEMPLATE.md`.
+- **Wolfspine** — the novel draft: Ulfir of Hrafvik, the fortress at the empire's
+  northern edge, and what comes over the wall.
 
 ## Layout
 
 ```
 story/
 ├── README.md            you are here — conventions and status
+├── TEMPLATE.md          five-act template with line budgets for short stories
+├── stories/             small self-contained stories written to the template
 ├── OUTLINE.md           the working outline — spine, movements, scene list, threads
 ├── CHARACTERS.md        who exists, what's established, what's only planned
 ├── WORLD.md             places, peoples, things, and locked spellings
