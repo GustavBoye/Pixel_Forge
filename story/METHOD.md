@@ -65,15 +65,39 @@ What comes of the person's behaviour, or of the situation. Two ways in:
 
 Same shape, different starting point. Pick one and the rest of the chain follows.
 
+**The move: the thing that made them wrong is what makes them right.** Don't hand them
+luck — hand them the payoff of their own difference. The ears that made him an outcast are
+ordinary here, maybe even useful. The crossing that made Berrick a fool makes him a king.
+The water that was poison makes the trapper sharp. That's why "it went good at first"
+convinces: it isn't a reprieve, it's the base finally paying.
+
+Then plant the condition — the small print on the reward — without naming it.
+
 ## Step 4 — The long consequence
 
 Time passes. What did step 3 grow into? Usually the high point — they get what they were
-after. Show the good of it plainly, or the ending won't land.
+after.
+
+**Let them win, and let them enjoy it.** This is the step people rush, and then the ending
+has nothing to break. Give it room: the prosperity, the belonging, the years of it.
+
+**The move: the first crack is not a new problem — it's the reward turning its face.**
+Not a rival, not a storm, not politics arriving from offstage. The same thing that gave
+them everything, seen from a new angle. Berrick's people grow numerous enough that one of
+them asks a question. The trapper is sharper than he was, and one day he hears the water
+when he is nowhere near it.
 
 ## Step 5 — The final consequence
 
 The bill. It has to come from what they did, not from something arriving offstage.
-Close on the meaning.
+
+**The move: the same situation comes back with the roles swapped.** They end up standing
+where the other person stood in step 1 — on the other side of their own choice. The
+trapper, who drank because he was lost, walks his children to the water. Berrick, who lied
+to save his people, is killed by the people the lie saved.
+
+Close on one image, and don't explain it. The moral from step 2 should be sitting right
+there, unsaid.
 
 ## Step 6 — Give it a face
 
@@ -137,3 +161,31 @@ Three questions. Any "no" sends you back, and it's cheap while it's still bullet
 Six lines, ten minutes, and the story is decided. Note what step 6 did: told from the
 trapper it's a story about a man who ruins himself. From the daughter it's a story about
 what you inherit — and the last act became a scene instead of a summary.
+
+
+## The same thing, run on the boy with the ears
+
+> **1.** Once there was a kid in Huldugaard with massive ears. *(Base: the ears.)*
+>
+> **2.** Keep the base, change the environment: take him somewhere big ears are ordinary
+> and his friend becomes the strange one. Moral — finding where you belong can mean making
+> someone else the stranger.
+>
+> **3.** *It was always terrible, he needed a change.* He and his friend leave. In the new
+> place the ears are nothing; he is ordinary for the first time in his life, and it is the
+> best thing that has ever happened to him. His difference finally pays. **The condition,
+> unnamed:** the friend is now the one people look at.
+>
+> **4.** Years. He belongs completely — a life, a place, people who never once mention his
+> ears. The crack is that same belonging turning its face: he no longer notices what his
+> friend goes through, because not noticing is what belonging *is*.
+>
+> **5.** Roles swapped. His own child is born, and the child takes after the other side —
+> and doesn't fit here. He is now the parent of the outsider, standing exactly where his
+> friend stood. Does he uproot the life he chose, or let his child endure the thing he
+> himself refused to endure?
+>
+> **6.** Whose eyes? His — so we watch him not notice. Or the friend's, and it becomes a
+> story about being left behind while someone you love is happy.
+
+The moral never gets said. It's just what's left standing at the end.
