@@ -8,7 +8,7 @@ empire's northern edge, and what comes over the wall.
 ```
 story/
 ├── README.md            you are here — conventions and status
-├── OUTLINE.md           beat-by-beat outline; [ ] marks beats not yet drafted
+├── OUTLINE.md           the working outline — spine, movements, scene list, threads
 ├── CHARACTERS.md        who exists, what's established, what's only planned
 ├── WORLD.md             places, peoples, things, and locked spellings
 ├── manuscript/
@@ -54,4 +54,5 @@ with a Bloodguard child and can have no more, and Ulfir has to choose.
 
 Commit per chapter or per revision pass so the draft history is readable later
 (`git log --follow story/manuscript/act-1/01-urgard.md` will then show a chapter's whole
-life). `OUTLINE.md` is the checklist — tick a box only when the beat is on the page.
+life). `OUTLINE.md` is the working document — one line per scene, plus the open threads
+and the decisions still to make. Keep it compressed; detail belongs in the manuscript.
