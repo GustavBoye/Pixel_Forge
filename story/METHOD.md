@@ -33,6 +33,10 @@ Stuck? `SPARKS.md` has premises already worked out.
 A cool, descriptive thing that happened there. Something you can see — a place, weather,
 a moment. Not a plot. A picture.
 
+It also has to contain a **base**: the concrete thing the story gets built on. A trait, an
+object, a difference. *Once there was a kid with massive ears.* Without a base you have
+scenery, and steps 2 and 3 have nothing to grab.
+
 ## Step 2 — The moral
 
 Does it tell us something about us as humans, or about how the world works? One line.
@@ -40,6 +44,15 @@ Does it tell us something about us as humans, or about how the world works? One 
 Never write this line into the story. It's what's left in the reader, not what you say to
 them. If it's comfortable to say out loud, push it further — the good ones are slightly
 uncomfortable.
+
+**The reliable way to find one: keep the base, change the environment.** The ears don't
+change; where the boy stands does. Move him somewhere big ears are ordinary and the value
+flips — now his friend is the strange one. Read the moral off the inversion.
+
+Then push on whoever it cost. In that example the friend came along and became the
+outsider, so staying means choosing your own comfort over the person who walked there
+with you. "Find where you fit" is the soft version; "finding where you belong can mean
+making someone else the stranger" is the one with teeth.
 
 ## Step 3 — The first consequence
 
